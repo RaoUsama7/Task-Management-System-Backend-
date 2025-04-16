@@ -34,6 +34,23 @@ export class AuthService {
     };
     return {
       access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      }
     };
+  }
+
+  async getUserFromToken(token: string): Promise<User | null> {
+    try {
+      const payload = this.jwtService.verify(token);
+      if (payload.sub) {
+        return this.usersService.findById(payload.sub);
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
   }
 }
