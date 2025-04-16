@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
+import { PaginatedUserResponseDto, UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -10,6 +11,28 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
   ) {}
+
+  async findAll(page: number = 1, limit: number = 10): Promise<PaginatedUserResponseDto> {
+    const [users, total] = await this.usersRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      select: ['id', 'email', 'role'], // Exclude password from results
+    });
+    
+    // Map users to UserResponseDto
+    const userResponses: UserResponseDto[] = users.map(user => ({
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }));
+    
+    return {
+      users: userResponses,
+      total,
+      page,
+      limit,
+    };
+  }
 
   async findByEmail(email: string): Promise<User | undefined> {
     const user = await this.usersRepository.findOne({ where: { email } });
