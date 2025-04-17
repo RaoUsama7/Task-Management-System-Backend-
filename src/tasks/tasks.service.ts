@@ -27,6 +27,16 @@ export class TasksService {
       description: createTaskDto.description,
       status: createTaskDto.status || TaskStatus.PENDING,
     } as Task);
+    
+    // Assign user if provided in DTO
+    if (createTaskDto.assignedToId) {
+      const user = await this.usersService.findById(createTaskDto.assignedToId);
+      if (user) {
+        task.assignedTo = user;
+        task.assignedToEmail = user.email;
+      }
+    }
+    
     const savedTask = await this.tasksRepository.save(task);
     
     // Emit task created event
@@ -35,22 +45,25 @@ export class TasksService {
     return savedTask;
   }
 
-  async findAll(user: User): Promise<Task[]> {
+  async findAll(user: User, status?: string): Promise<Task[]> {
     this.logger.log(`Finding tasks for user: ${user.id} with role: ${user.role}`);
     
-    if (user.role === Role.ADMIN) {
-      const tasks = await this.tasksRepository.find({
-        relations: ['assignedTo'],
-      });
-      this.logger.log(`Admin found ${tasks.length} tasks`);
-      return tasks;
+    // Build query
+    const query = this.tasksRepository.createQueryBuilder('task')
+      .leftJoinAndSelect('task.assignedTo', 'assignedTo');
+    
+    // Add status filter if provided
+    if (status && Object.values(TaskStatus).includes(status as TaskStatus)) {
+      query.andWhere('task.status = :status', { status });
     }
     
-    const tasks = await this.tasksRepository.find({
-      where: { assignedTo: { id: user.id } },
-      relations: ['assignedTo'],
-    });
-    this.logger.log(`User found ${tasks.length} tasks`);
+    // Add user filter based on role
+    if (user.role !== Role.ADMIN) {
+      query.andWhere('assignedTo.id = :userId', { userId: user.id });
+    }
+    
+    const tasks = await query.getMany();
+    this.logger.log(`Found ${tasks.length} tasks`);
     return tasks;
   }
 
@@ -90,6 +103,7 @@ export class TasksService {
     }
 
     task.assignedTo = newAssignee;
+    task.assignedToEmail = newAssignee.email;
     const updatedTask = await this.tasksRepository.save(task);
 
     // Emit task assigned event

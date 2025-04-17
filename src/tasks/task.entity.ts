@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 
 export enum TaskStatus {
@@ -27,4 +27,13 @@ export class Task {
 
   @ManyToOne(() => User, user => user.tasks)
   assignedTo: User;
+
+  @Column({ nullable: true })
+  assignedToEmail: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 } 

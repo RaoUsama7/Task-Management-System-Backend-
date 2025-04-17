@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User, Role } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { PaginatedUserResponseDto, UserResponseDto } from './dto/user-response.dto';
 
@@ -63,5 +63,11 @@ export class UsersService {
     const user = await this.findById(id);
     Object.assign(user, data);
     return this.usersRepository.save(user);
+  }
+
+  async findAllAdmins(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: { role: Role.ADMIN },
+    });
   }
 }

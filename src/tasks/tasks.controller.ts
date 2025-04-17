@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -35,8 +36,8 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Req() req: RequestWithUser) {
-    return this.tasksService.findAll(req.user);
+  findAll(@Req() req: RequestWithUser, @Query('status') status?: string) {
+    return this.tasksService.findAll(req.user, status);
   }
 
   @Get(':id')
